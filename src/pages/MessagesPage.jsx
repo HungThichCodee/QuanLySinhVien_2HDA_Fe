@@ -10,6 +10,7 @@ function MessagesPage() {
   let [text, setText] = useState('')
   let [loading, setLoading] = useState(true)
   let chatEnd = useRef(null)
+  let fileInput = useRef(null)
 
   useEffect(function () {
     messageService.getConversations().then(function (r) { setConversations(Array.isArray(r) ? r : []); setLoading(false) }).catch(function () { setLoading(false) })
@@ -36,6 +37,22 @@ function MessagesPage() {
       setMessages(Array.isArray(msgs) ? msgs : [])
       setTimeout(function () { chatEnd.current?.scrollIntoView({ behavior: 'smooth' }) }, 100)
     } catch (err) { console.log(err) }
+  }
+
+  async function handleFileSend(e) {
+    let file = e.target.files[0]
+    if (!file || !selectedUser) return
+    try {
+      let userId = selectedUser._id || selectedUser.user?._id
+      let formData = new FormData()
+      formData.append('file', file)
+      formData.append('to', userId)
+      await messageService.sendFileMessage(formData)
+      let msgs = await messageService.getHistory(userId)
+      setMessages(Array.isArray(msgs) ? msgs : [])
+      setTimeout(function () { chatEnd.current?.scrollIntoView({ behavior: 'smooth' }) }, 100)
+    } catch (err) { console.log(err) }
+    e.target.value = ''
   }
 
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>
@@ -73,7 +90,11 @@ function MessagesPage() {
                 return (
                   <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${isMe ? 'bg-primary text-white rounded-br-md' : 'bg-gray-100 text-gray-800 rounded-bl-md'}`}>
-                      {msg.messageContent?.content || msg.content || ''}
+                      {msg.messageContent?.type === 'file' ? (
+                        <a href={msg.messageContent?.text} target="_blank" rel="noreferrer" className={`underline ${isMe ? 'text-white' : 'text-primary'}`}>Tệp đính kèm</a>
+                      ) : (
+                        msg.messageContent?.text || msg.messageContent?.content || msg.content || ''
+                      )}
                     </div>
                   </div>
                 )
@@ -81,13 +102,15 @@ function MessagesPage() {
               <div ref={chatEnd}></div>
             </div>
             <form onSubmit={handleSend} className="p-4 border-t border-gray-200 flex gap-2">
-              <input type="text" value={text} onChange={function (e) { setText(e.target.value) }} placeholder="Nhap tin nhan..."
+              <input type="text" value={text} onChange={function (e) { setText(e.target.value) }} placeholder="Nhập tin nhắn..."
                 className="flex-1 px-4 py-2.5 rounded-full border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-              <button type="submit" className="bg-primary text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-primary-dark transition-colors">Gui</button>
+              <input type="file" ref={fileInput} onChange={handleFileSend} className="hidden" />
+              <button type="button" onClick={function () { fileInput.current?.click() }} className="bg-gray-100 text-gray-600 px-3 py-2.5 rounded-full text-sm hover:bg-gray-200 transition-colors" title="Đính kèm file">+</button>
+              <button type="submit" className="bg-primary text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-primary-dark transition-colors">Gửi</button>
             </form>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Chon hoi thoai de bat dau</div>
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Chọn hội thoại để bắt đầu</div>
         )}
       </div>
     </div>
