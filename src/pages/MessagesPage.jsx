@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import * as messageService from '../services/messages.service.js'
+import * as userService from '../services/users.service.js'
+import Modal from '../components/ui/Modal.jsx'
 
 function MessagesPage() {
   let { user } = useAuth()
@@ -9,6 +11,8 @@ function MessagesPage() {
   let [messages, setMessages] = useState([])
   let [text, setText] = useState('')
   let [loading, setLoading] = useState(true)
+  let [newChatModal, setNewChatModal] = useState(false)
+  let [usersList, setUsersList] = useState([])
   let chatEnd = useRef(null)
   let fileInput = useRef(null)
 
@@ -19,18 +23,36 @@ function MessagesPage() {
   async function selectConversation(conv) {
     setSelectedUser(conv)
     try {
-      let userId = conv._id || conv.user?._id
+      let userId = typeof conv.user === 'string' ? conv.user : (conv._id || conv.user?._id)
       let msgs = await messageService.getHistory(userId)
       setMessages(Array.isArray(msgs) ? msgs : [])
       setTimeout(function () { chatEnd.current?.scrollIntoView({ behavior: 'smooth' }) }, 100)
     } catch (err) { console.log(err) }
   }
 
+  async function openNewChat() {
+    try {
+      let u = await userService.getAll()
+      setUsersList(Array.isArray(u) ? u.filter(function(i) { return i._id !== user?._id }) : [])
+      setNewChatModal(true)
+    } catch (err) { console.log(err) }
+  }
+
+  function startChatWithUser(u) {
+    setNewChatModal(false)
+    let conv = { _id: u._id, fullName: u.fullname || u.username, user: u }
+    // Add to top of list if not exists
+    if (!conversations.find(function(c) { return c._id === u._id || c.user?._id === u._id || c.user === u._id })) {
+      setConversations([conv, ...conversations])
+    }
+    selectConversation(conv)
+  }
+
   async function handleSend(e) {
     e.preventDefault()
     if (!text.trim() || !selectedUser) return
     try {
-      let userId = selectedUser._id || selectedUser.user?._id
+      let userId = typeof selectedUser.user === 'string' ? selectedUser.user : (selectedUser._id || selectedUser.user?._id)
       await messageService.sendMessage({ to: userId, content: text })
       setText('')
       let msgs = await messageService.getHistory(userId)
@@ -43,7 +65,7 @@ function MessagesPage() {
     let file = e.target.files[0]
     if (!file || !selectedUser) return
     try {
-      let userId = selectedUser._id || selectedUser.user?._id
+      let userId = typeof selectedUser.user === 'string' ? selectedUser.user : (selectedUser._id || selectedUser.user?._id)
       let formData = new FormData()
       formData.append('file', file)
       formData.append('to', userId)
@@ -61,7 +83,10 @@ function MessagesPage() {
     <div className="flex h-[calc(100vh-140px)] bg-white rounded-xl shadow-card overflow-hidden">
       {/* Conversations list */}
       <div className="w-72 border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200"><h2 className="text-sm font-semibold text-gray-800">Hoi thoai</h2></div>
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-800">Hội thoại</h2>
+          <button onClick={openNewChat} className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm shadow hover:bg-primary-dark">+</button>
+        </div>
         <div className="flex-1 overflow-y-auto">
           {conversations.map(function (conv) {
             let isActive = selectedUser && (selectedUser._id === conv._id)
@@ -73,7 +98,7 @@ function MessagesPage() {
               </div>
             )
           })}
-          {conversations.length === 0 && <p className="text-sm text-gray-400 text-center py-8">Chua co hoi thoai</p>}
+          {conversations.length === 0 && <p className="text-sm text-gray-400 text-center py-8">Chưa có hội thoại</p>}
         </div>
       </div>
 
@@ -113,6 +138,23 @@ function MessagesPage() {
           <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Chọn hội thoại để bắt đầu</div>
         )}
       </div>
+
+      <Modal isOpen={newChatModal} onClose={function () { setNewChatModal(false) }} title="Tin nhắn mới">
+        <div className="max-h-96 overflow-y-auto">
+          {usersList.map(function(u) {
+            return (
+              <div key={u._id} onClick={function() { startChatWithUser(u) }} className="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{u.fullname || u.username}</p>
+                  <p className="text-xs text-gray-500">{u.role}</p>
+                </div>
+                <span className="text-primary text-xs font-semibold">Nhắn tin</span>
+              </div>
+            )
+          })}
+          {usersList.length === 0 && <p className="text-sm text-gray-500 text-center py-4">Không tìm thấy người dùng</p>}
+        </div>
+      </Modal>
     </div>
   )
 }

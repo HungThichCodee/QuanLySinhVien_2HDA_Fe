@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import ChangePasswordModal from '../auth/ChangePasswordModal.jsx'
 
 let adminMenus = [
   { path: '/dashboard', label: 'Dashboard' },
@@ -40,6 +41,7 @@ let studentMenus = [
 function Sidebar() {
   let { user, isAdmin, isTeacher, logout } = useAuth()
   let [collapsed, setCollapsed] = useState(false)
+  let [changePasswordOpen, setChangePasswordOpen] = useState(false)
 
   let menus = isAdmin ? adminMenus : isTeacher ? teacherMenus : studentMenus
 
@@ -78,10 +80,14 @@ function Sidebar() {
             <p className="text-xs text-gray-400">{user?.role}</p>
           </div>
         )}
+        <button onClick={function() { setChangePasswordOpen(true) }} className="flex items-center gap-2 text-sm text-gray-600 hover:text-primary transition-colors w-full mb-3">
+          {!collapsed && <span>Đổi mật khẩu</span>}
+        </button>
         <button onClick={logout} className="flex items-center gap-2 text-sm text-red-500 hover:text-red-700 transition-colors w-full">
           {!collapsed && <span>Đăng xuất</span>}
         </button>
       </div>
+      <ChangePasswordModal isOpen={changePasswordOpen} onClose={function() { setChangePasswordOpen(false) }} />
     </aside>
   )
 }

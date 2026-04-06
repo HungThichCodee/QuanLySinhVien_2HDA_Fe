@@ -3,14 +3,21 @@ import { useAuth } from '../hooks/useAuth'
 import * as service from '../services/notifications.service.js'
 import Modal from '../components/ui/Modal.jsx'
 import Toast from '../components/ui/Toast.jsx'
+import * as userService from '../services/users.service.js'
+import * as classService from '../services/classes.service.js'
+import * as ccService from '../services/courseclasses.service.js'
 
 function NotificationsPage() {
   let { isAdmin, isTeacher } = useAuth()
   let [data, setData] = useState([])
   let [loading, setLoading] = useState(true)
   let [modalOpen, setModalOpen] = useState(false)
-  let [form, setForm] = useState({ title: '', content: '' })
+  let [form, setForm] = useState({ title: '', content: '', targetType: 'all', targetId: '' })
   let [toast, setToast] = useState(null)
+
+  let [users, setUsers] = useState([])
+  let [classes, setClasses] = useState([])
+  let [courseClasses, setCourseClasses] = useState([])
 
   useEffect(function () {
     service.getAll().then(function (r) { setData(Array.isArray(r) ? r : []); setLoading(false) }).catch(function () { setLoading(false) })
@@ -23,12 +30,16 @@ function NotificationsPage() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    try { let result = await service.create(form); setData([result, ...data]); setModalOpen(false); setToast({ message: 'Gui thong bao thanh cong', type: 'success' }) }
+    if (form.targetType !== 'all' && !form.targetId) {
+      setToast({ message: 'Vui lòng chọn đối tượng nhận', type: 'error' })
+      return
+    }
+    try { let result = await service.create(form); setData([...(Array.isArray(result) ? result : [result]), ...data]); setModalOpen(false); setToast({ message: 'Gửi thông báo thành công', type: 'success' }) }
     catch (err) { setToast({ message: err.message, type: 'error' }) }
   }
 
   async function handleDelete(id) {
-    try { await service.remove(id); setData(data.filter(function (n) { return n._id !== id })); setToast({ message: 'Xoa thanh cong', type: 'success' }) }
+    try { await service.remove(id); setData(data.filter(function (n) { return n._id !== id })); setToast({ message: 'Xóa thành công', type: 'success' }) }
     catch (err) { setToast({ message: err.message, type: 'error' }) }
   }
 
@@ -41,10 +52,10 @@ function NotificationsPage() {
       {toast && <Toast message={toast.message} type={toast.type} onClose={function () { setToast(null) }} />}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-gray-800 font-display">Thong bao</h1>
+          <h1 className="text-2xl font-bold text-gray-800 font-display">Thông báo</h1>
           {unreadCount > 0 && <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{unreadCount}</span>}
         </div>
-        {(isAdmin || isTeacher) && <button onClick={function () { setModalOpen(true) }} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors">+ Gui thong bao</button>}
+        {(isAdmin || isTeacher) && <button onClick={function () { setForm({ title: '', content: '', targetType: 'all', targetId: '' }); setModalOpen(true) }} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors">+ Gửi thông báo</button>}
       </div>
 
       <div className="space-y-3">
@@ -62,14 +73,37 @@ function NotificationsPage() {
             </div>
           )
         })}
-        {data.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">Khong co thong bao</p>}
+        {data.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">Không có thông báo</p>}
       </div>
 
-      <Modal isOpen={modalOpen} onClose={function () { setModalOpen(false) }} title="Gui thong bao">
+      <Modal isOpen={modalOpen} onClose={function () { setModalOpen(false) }} title="Gửi thông báo">
         <form onSubmit={handleSubmit}>
-          <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1.5">Tieu de</label><input type="text" value={form.title} onChange={function (e) { setForm({ ...form, title: e.target.value }) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" required /></div>
-          <div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-1.5">Noi dung</label><textarea value={form.content} onChange={function (e) { setForm({ ...form, content: e.target.value }) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" rows="4" required></textarea></div>
-          <div className="flex justify-end gap-3"><button type="button" onClick={function () { setModalOpen(false) }} className="px-4 py-2 rounded-lg text-sm border border-gray-300 text-gray-600 hover:bg-gray-50">Huy</button><button type="submit" className="px-4 py-2 rounded-lg text-sm bg-primary text-white font-semibold hover:bg-primary-dark">Gui</button></div>
+          <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1.5">Tiêu đề</label><input type="text" value={form.title} onChange={function (e) { setForm({ ...form, title: e.target.value }) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" required /></div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Gửi đến</label>
+            <select value={form.targetType} onChange={function(e) { setForm({ ...form, targetType: e.target.value, targetId: '' }) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
+              <option value="all">Tất cả mọi người</option>
+              {isAdmin && <option value="class">Một Lớp hành chính</option>}
+              <option value="courseclass">Một Lớp học phần</option>
+              {isAdmin && <option value="user">Một Người dùng cụ thể</option>}
+            </select>
+          </div>
+
+          {form.targetType === 'class' && (
+            <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1.5">Chọn Lớp</label><select value={form.targetId} onChange={function(e){ setForm({...form, targetId: e.target.value}) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"><option value="">-- Chọn --</option>{classes.map(function(c){ return <option key={c._id} value={c._id}>{c.name}</option> })}</select></div>
+          )}
+
+          {form.targetType === 'courseclass' && (
+            <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1.5">Chọn Lớp HP</label><select value={form.targetId} onChange={function(e){ setForm({...form, targetId: e.target.value}) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"><option value="">-- Chọn --</option>{courseClasses.map(function(cc){ return <option key={cc._id} value={cc._id}>{cc.subject?.name} - {cc.semester?.name}</option> })}</select></div>
+          )}
+
+          {form.targetType === 'user' && (
+            <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1.5">Chọn người dùng</label><select value={form.targetId} onChange={function(e){ setForm({...form, targetId: e.target.value}) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"><option value="">-- Chọn --</option>{users.map(function(u){ return <option key={u._id} value={u._id}>{u.fullname || u.username} ({u.role})</option> })}</select></div>
+          )}
+
+          <div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-1.5">Nội dung</label><textarea value={form.content} onChange={function (e) { setForm({ ...form, content: e.target.value }) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" rows="4" required></textarea></div>
+          <div className="flex justify-end gap-3"><button type="button" onClick={function () { setModalOpen(false) }} className="px-4 py-2 rounded-lg text-sm border border-gray-300 text-gray-600 hover:bg-gray-50">Hủy</button><button type="submit" className="px-4 py-2 rounded-lg text-sm bg-primary text-white font-semibold hover:bg-primary-dark">Gửi</button></div>
         </form>
       </Modal>
     </div>

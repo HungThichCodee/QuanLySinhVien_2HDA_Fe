@@ -27,11 +27,11 @@ function EnrollmentsPage() {
   let enrolledIds = enrollments.map(function (e) { return e.courseClass?._id || e.courseClass })
 
   async function handleRegister(ccId) {
-    try { await enrollmentService.register(ccId); setToast({ message: 'Dang ky thanh cong', type: 'success' }); let enr = await enrollmentService.getMyEnrollments(); setEnrollments(enr) }
+    try { await enrollmentService.register(ccId); setToast({ message: 'Đăng ký thành công', type: 'success' }); let enr = isStudent ? await enrollmentService.getMyEnrollments() : await enrollmentService.getAll(); setEnrollments(Array.isArray(enr) ? enr : []) }
     catch (err) { setToast({ message: err.message, type: 'error' }) }
   }
   async function handleCancel(ccId) {
-    try { await enrollmentService.cancel(ccId); setToast({ message: 'Huy thanh cong', type: 'success' }); let enr = await enrollmentService.getMyEnrollments(); setEnrollments(enr) }
+    try { await enrollmentService.cancel(ccId); setToast({ message: 'Hủy thành công', type: 'success' }); let enr = isStudent ? await enrollmentService.getMyEnrollments() : await enrollmentService.getAll(); setEnrollments(Array.isArray(enr) ? enr : []) }
     catch (err) { setToast({ message: err.message, type: 'error' }) }
   }
 
@@ -40,7 +40,7 @@ function EnrollmentsPage() {
   return (
     <div>
       {toast && <Toast message={toast.message} type={toast.type} onClose={function () { setToast(null) }} />}
-      <h1 className="text-2xl font-bold text-gray-800 font-display mb-6">Dang ky hoc phan</h1>
+      <h1 className="text-2xl font-bold text-gray-800 font-display mb-6">{isStudent ? 'Đăng ký học phần' : 'Quản lý đăng ký học phần'}</h1>
 
       {isStudent ? (
         <>

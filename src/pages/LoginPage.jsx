@@ -35,7 +35,7 @@ function LoginPage() {
         </div>
 
         <div className="bg-white rounded-xl shadow-card-md p-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6 font-display">Dang nhap</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-6 font-display">Đăng nhập</h2>
 
           {error && (
             <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg mb-4 border border-red-200">{error}</div>
@@ -43,26 +43,29 @@ function LoginPage() {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Ten dang nhap</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Tên đăng nhập</label>
               <input
                 type="text"
                 value={username}
                 onChange={function (e) { setUsername(e.target.value) }}
                 className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-                placeholder="Nhap username"
+                placeholder="Nhập username"
                 autoComplete="username"
                 required
               />
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Mat khau</label>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">Mật khẩu</label>
+                <Link to="/forgot-password" className="text-sm text-primary hover:underline font-medium">Quên mật khẩu?</Link>
+              </div>
               <input
                 type="password"
                 value={password}
                 onChange={function (e) { setPassword(e.target.value) }}
                 className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-                placeholder="Nhap password"
+                placeholder="Nhập password"
                 autoComplete="current-password"
                 required
               />
@@ -73,12 +76,12 @@ function LoginPage() {
               disabled={loading}
               className="w-full bg-primary text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors disabled:opacity-50"
             >
-              {loading ? 'Dang xu ly...' : 'Dang nhap'}
+              {loading ? 'Đang xử lý...' : 'Đăng nhập'}
             </button>
           </form>
 
-          <p className="text-sm text-gray-500 text-center mt-4">
-            Chua co tai khoan? <Link to="/register" className="text-primary hover:underline font-medium">Dang ky</Link>
+          <p className="text-sm text-gray-500 text-center mt-6">
+            Chưa có tài khoản? <Link to="/register" className="text-primary hover:underline font-medium">Đăng ký</Link>
           </p>
         </div>
       </div>
