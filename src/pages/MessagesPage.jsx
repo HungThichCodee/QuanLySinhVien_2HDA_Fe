@@ -13,6 +13,7 @@ function MessagesPage() {
   let [loading, setLoading] = useState(true)
   let [newChatModal, setNewChatModal] = useState(false)
   let [usersList, setUsersList] = useState([])
+  let [searchQuery, setSearchQuery] = useState('')
   let chatEnd = useRef(null)
   let fileInput = useRef(null)
 
@@ -32,7 +33,8 @@ function MessagesPage() {
 
   async function openNewChat() {
     try {
-      let u = await userService.getAll()
+      setSearchQuery('')
+      let u = await messageService.getContacts()
       setUsersList(Array.isArray(u) ? u.filter(function(i) { return i._id !== user?._id }) : [])
       setNewChatModal(true)
     } catch (err) { console.log(err) }
@@ -88,13 +90,14 @@ function MessagesPage() {
           <button onClick={openNewChat} className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm shadow hover:bg-primary-dark">+</button>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {conversations.map(function (conv) {
-            let isActive = selectedUser && (selectedUser._id === conv._id)
+          {conversations.map(function (conv, idx) {
+            let convKey = conv._id || (typeof conv.user === 'string' ? conv.user : conv.user?._id) || idx
+            let isActive = selectedUser && ((selectedUser._id && selectedUser._id === convKey) || (selectedUser.user === convKey))
             return (
-              <div key={conv._id} onClick={function () { selectConversation(conv) }}
+              <div key={convKey} onClick={function () { selectConversation(conv) }}
                 className={`px-4 py-3 cursor-pointer border-b border-gray-100 transition-colors ${isActive ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
                 <p className="text-sm font-medium text-gray-800 truncate">{conv.fullName || conv.username || conv.user?.fullName || 'User'}</p>
-                <p className="text-xs text-gray-400 truncate">{conv.lastMessage || ''}</p>
+                <p className="text-xs text-gray-400 truncate">{conv.lastMessage || conv.message?.messageContent?.text || ''}</p>
               </div>
             )
           })}
@@ -110,10 +113,10 @@ function MessagesPage() {
               <h3 className="text-sm font-semibold text-gray-800">{selectedUser.fullName || selectedUser.username || selectedUser.user?.fullName}</h3>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.map(function (msg, i) {
+              {messages.map(function (msg) {
                 let isMe = msg.from === user?._id || msg.from?._id === user?._id
                 return (
-                  <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                  <div key={msg._id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${isMe ? 'bg-primary text-white rounded-br-md' : 'bg-gray-100 text-gray-800 rounded-bl-md'}`}>
                       {msg.messageContent?.type === 'file' ? (
                         <a href={msg.messageContent?.text} target="_blank" rel="noreferrer" className={`underline ${isMe ? 'text-white' : 'text-primary'}`}>Tệp đính kèm</a>
@@ -140,8 +143,14 @@ function MessagesPage() {
       </div>
 
       <Modal isOpen={newChatModal} onClose={function () { setNewChatModal(false) }} title="Tin nhắn mới">
+        <div className="mb-4">
+          <input type="text" value={searchQuery} onChange={function(e) { setSearchQuery(e.target.value) }} placeholder="Tìm kiếm tên, tài khoản..." className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+        </div>
         <div className="max-h-96 overflow-y-auto">
-          {usersList.map(function(u) {
+          {usersList.filter(function(u) {
+            let q = searchQuery.toLowerCase()
+            return (u.fullname || '').toLowerCase().includes(q) || u.username.toLowerCase().includes(q)
+          }).map(function(u) {
             return (
               <div key={u._id} onClick={function() { startChatWithUser(u) }} className="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer flex items-center justify-between">
                 <div>
@@ -152,7 +161,11 @@ function MessagesPage() {
               </div>
             )
           })}
-          {usersList.length === 0 && <p className="text-sm text-gray-500 text-center py-4">Không tìm thấy người dùng</p>}
+          {usersList.length === 0 && <p className="text-sm text-gray-500 text-center py-4">Không tìm thấy đối tượng nhắn tin</p>}
+          {usersList.length > 0 && usersList.filter(function(u) {
+            let q = searchQuery.toLowerCase()
+            return (u.fullname || '').toLowerCase().includes(q) || u.username.toLowerCase().includes(q)
+          }).length === 0 && <p className="text-sm text-gray-500 text-center py-4">Không có kết quả tìm kiếm</p>}
         </div>
       </Modal>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useSocket } from '../contexts/SocketContext.jsx'
 import * as service from '../services/notifications.service.js'
 import Modal from '../components/ui/Modal.jsx'
 import Toast from '../components/ui/Toast.jsx'
@@ -9,8 +10,20 @@ import * as ccService from '../services/courseclasses.service.js'
 
 function NotificationsPage() {
   let { isAdmin, isTeacher } = useAuth()
+  let { socket } = useSocket()
   let [data, setData] = useState([])
   let [loading, setLoading] = useState(true)
+
+  useEffect(function() {
+    if (!socket) return;
+    function handleNewNotif(newNotif) {
+      setData(function(prev) { return [newNotif, ...prev] })
+    }
+    socket.on('new_notification', handleNewNotif)
+    return function() {
+      socket.off('new_notification', handleNewNotif)
+    }
+  }, [socket])
   let [modalOpen, setModalOpen] = useState(false)
   let [form, setForm] = useState({ title: '', content: '', targetType: 'all', targetId: '' })
   let [toast, setToast] = useState(null)
@@ -21,7 +34,15 @@ function NotificationsPage() {
 
   useEffect(function () {
     service.getAll().then(function (r) { setData(Array.isArray(r) ? r : []); setLoading(false) }).catch(function () { setLoading(false) })
-  }, [])
+    
+    if (isAdmin) {
+      classService.getAll().then(function(c) { setClasses(Array.isArray(c) ? c : []) })
+      userService.getAll().then(function(u) { setUsers(Array.isArray(u) ? u : []) })
+      ccService.getAll().then(function(cc) { setCourseClasses(Array.isArray(cc) ? cc : []) })
+    } else if (isTeacher) {
+      ccService.getMyTeaching().then(function(cc) { setCourseClasses(Array.isArray(cc) ? cc : []) })
+    }
+  }, [isAdmin, isTeacher])
 
   async function markRead(id) {
     try { await service.markAsRead(id); setData(data.map(function (n) { return n._id === id ? { ...n, isRead: true } : n })) }

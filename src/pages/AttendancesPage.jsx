@@ -37,6 +37,20 @@ function AttendancesPage() {
     } catch (err) { setToast({ message: err.message, type: 'error' }) }
   }
 
+  useEffect(function() {
+    if (!students || students.length === 0) return;
+    let newBulkData = {}
+    let targetDate = new Date(date).toDateString()
+    
+    students.forEach(function(s) {
+       let existingAtt = attendances.find(function(a) { 
+         return a.enrollment?._id === s._id && new Date(a.date).toDateString() === targetDate 
+       })
+       newBulkData[s._id] = existingAtt ? existingAtt.status : 'present'
+    })
+    setBulkData(newBulkData)
+  }, [date, attendances, students])
+
   function handleBulkChange(enrollmentId, status) {
     setBulkData({ ...bulkData, [enrollmentId]: status })
   }

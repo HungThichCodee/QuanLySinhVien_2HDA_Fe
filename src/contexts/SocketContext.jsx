@@ -52,6 +52,11 @@ export function SocketProvider({ children }) {
     setSocket(newSocket)
 
     return function () {
+      newSocket.off('connect')
+      newSocket.off('grade_updated')
+      newSocket.off('new_notification')
+      newSocket.off('new_message')
+      newSocket.off('disconnect')
       newSocket.disconnect()
       setSocket(null)
     }

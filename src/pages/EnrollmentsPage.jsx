@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import * as enrollmentService from '../services/enrollments.service.js'
 import * as courseClassService from '../services/courseclasses.service.js'
+import * as attendanceService from '../services/attendances.service.js'
 import Toast from '../components/ui/Toast.jsx'
+import Modal from '../components/ui/Modal.jsx'
 
 function EnrollmentsPage() {
   let { isStudent } = useAuth()
@@ -10,6 +12,19 @@ function EnrollmentsPage() {
   let [courseClasses, setCourseClasses] = useState([])
   let [loading, setLoading] = useState(true)
   let [toast, setToast] = useState(null)
+  
+  let [attModalOpen, setAttModalOpen] = useState(false)
+  let [selectedHistory, setSelectedHistory] = useState([])
+  let [selectedClassTitle, setSelectedClassTitle] = useState('')
+
+  async function openAttendanceHistory(enrollmentId, subjectName) {
+    try {
+      setSelectedClassTitle(subjectName)
+      let atts = await attendanceService.getByEnrollment(enrollmentId)
+      setSelectedHistory(Array.isArray(atts) ? atts : [])
+      setAttModalOpen(true)
+    } catch (err) { setToast({ message: err.message, type: 'error' }) }
+  }
 
   useEffect(function () {
     async function load() {
@@ -46,7 +61,7 @@ function EnrollmentsPage() {
         <>
           <h2 className="text-lg font-semibold text-gray-700 mb-3">Lớp học phần đã đăng ký ({enrollments.length})</h2>
           <div className="bg-white rounded-xl shadow-card overflow-hidden mb-8"><table className="w-full"><thead><tr className="border-b border-gray-200 bg-gray-50"><th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">#</th><th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Môn học</th><th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Học kỳ</th><th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Thao tác</th></tr></thead><tbody>
-            {enrollments.map(function (item, i) { let cc = item.courseClass; return (<tr key={item._id} className="border-b border-gray-100 hover:bg-gray-50"><td className="px-5 py-3 text-sm text-gray-500">{i + 1}</td><td className="px-5 py-3 text-sm font-medium text-gray-800">{cc?.subject?.name || 'N/A'}</td><td className="px-5 py-3 text-sm text-gray-500">{cc?.semester?.name || 'N/A'}</td><td className="px-5 py-3 text-right"><button onClick={function () { handleCancel(cc?._id) }} className="text-red-500 hover:underline text-sm">Hủy ĐK</button></td></tr>) })}
+            {enrollments.map(function (item, i) { let cc = item.courseClass; return (<tr key={item._id} className="border-b border-gray-100 hover:bg-gray-50"><td className="px-5 py-3 text-sm text-gray-500">{i + 1}</td><td className="px-5 py-3 text-sm font-medium text-gray-800">{cc?.subject?.name || 'N/A'}</td><td className="px-5 py-3 text-sm text-gray-500">{cc?.semester?.name || 'N/A'}</td><td className="px-5 py-3 text-right"><button onClick={function () { openAttendanceHistory(item._id, cc?.subject?.name) }} className="text-blue-500 hover:underline text-sm mr-4">Xem Điểm danh</button><button onClick={function () { handleCancel(cc?._id) }} className="text-red-500 hover:underline text-sm">Hủy ĐK</button></td></tr>) })}
             {enrollments.length === 0 && <tr><td colSpan="4" className="px-5 py-8 text-center text-gray-400 text-sm">Chưa đăng ký lớp nào</td></tr>}
           </tbody></table></div>
 
@@ -75,6 +90,38 @@ function EnrollmentsPage() {
           {enrollments.length === 0 && <tr><td colSpan="4" className="px-5 py-8 text-center text-gray-400 text-sm">Chưa có đăng ký nào</td></tr>}
         </tbody></table></div>
       )}
+
+      <Modal isOpen={attModalOpen} onClose={function () { setAttModalOpen(false) }} title={`Lịch sử điểm danh: ${selectedClassTitle}`}>
+        <div className="max-h-96 overflow-y-auto">
+          <table className="w-full">
+             <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+               <tr>
+                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Ngày điểm danh</th>
+                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Trạng thái</th>
+               </tr>
+             </thead>
+             <tbody>
+               {selectedHistory.map(function(att, i) {
+                 return (
+                   <tr key={att._id} className="border-b border-gray-100 hover:bg-gray-50">
+                     <td className="px-5 py-3 text-sm text-gray-800">{new Date(att.date).toLocaleDateString('vi-VN')}</td>
+                     <td className="px-5 py-3 text-sm">
+                       {att.status === 'present' && <span className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium">Có mặt</span>}
+                       {att.status === 'absent' && <span className="px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium">Vắng mặt</span>}
+                       {att.status === 'late' && <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-medium">Trễ</span>}
+                     </td>
+                   </tr>
+                 )
+               })}
+               {selectedHistory.length === 0 && <tr><td colSpan="2" className="px-5 py-8 text-center text-gray-400 text-sm">Chưa có dữ liệu điểm danh</td></tr>}
+             </tbody>
+          </table>
+        </div>
+        <div className="mt-6 flex justify-end">
+           <button onClick={function () { setAttModalOpen(false) }} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Đóng</button>
+        </div>
+      </Modal>
+
     </div>
   )
 }

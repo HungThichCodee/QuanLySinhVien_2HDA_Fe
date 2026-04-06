@@ -20,7 +20,19 @@ function RegisterPage() {
       await authService.register(form)
       navigate('/login')
     } catch (err) {
-      setError(err.message || 'Dang ky that bai')
+      let errMsg = err.message || 'Dang ky that bai'
+      if (err.response && err.response.data) {
+        if (Array.isArray(err.response.data)) {
+          errMsg = err.response.data.map(function(e){ return Object.values(e)[0] }).join(', ')
+        } else if (typeof err.response.data === 'string') {
+          if (err.response.data.includes('E11000')) {
+             errMsg = 'Tên đăng nhập hoặc Email đã tồn tại'
+          } else {
+             errMsg = err.response.data
+          }
+        }
+      }
+      setError(errMsg)
     } finally {
       setLoading(false)
     }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useCRUD } from '../hooks/useCRUD.js'
 import * as service from '../services/courseclasses.service.js'
 import * as semesterService from '../services/semesters.service.js'
 import * as subjectService from '../services/subjects.service.js'
