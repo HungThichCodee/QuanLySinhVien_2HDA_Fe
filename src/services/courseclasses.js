@@ -1,0 +1,11 @@
+import { get, post, put, del } from './api.js'
+export let getAll = (query) => get('/courseclasses' + (query ? '?' + query : ''))
+export let getById = (id) => get('/courseclasses/' + id)
+export let getMyTeaching = () => get('/courseclasses/my/teaching')
+export let create = (data) => post('/courseclasses', data)
+export let update = (id, data) => put('/courseclasses/' + id, data)
+export let remove = (id) => del('/courseclasses/' + id)
+export let getRooms = () => get('/courseclasses/rooms')
+export let getScheduleSlots = () => get('/courseclasses/schedule-slots')
+export let getAvailableSlots = (semesterId, teacherId) => get('/courseclasses/available-slots?semester=' + semesterId + '&teacher=' + teacherId)
+export let getAvailableRooms = (semesterId, dayOfWeek, startPeriod, endPeriod) => get('/courseclasses/available-rooms?semester=' + semesterId + '&dayOfWeek=' + dayOfWeek + '&startPeriod=' + startPeriod + '&endPeriod=' + endPeriod)

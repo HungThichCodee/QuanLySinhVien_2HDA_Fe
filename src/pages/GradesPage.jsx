@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import * as gradeService from '../services/grades.service.js'
-import * as courseClassService from '../services/courseclasses.service.js'
+import * as gradeService from '../services/grades.js'
+import * as courseClassService from '../services/courseclasses.js'
 import Toast from '../components/ui/Toast.jsx'
 import ConfirmDialog from '../components/ui/ConfirmDialog.jsx'
 

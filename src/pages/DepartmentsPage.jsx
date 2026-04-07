@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useCRUD } from '../hooks/useCRUD'
-import * as service from '../services/departments.service.js'
+import * as service from '../services/departments.js'
 import Modal from '../components/ui/Modal.jsx'
 import ConfirmDialog from '../components/ui/ConfirmDialog.jsx'
 import Toast from '../components/ui/Toast.jsx'

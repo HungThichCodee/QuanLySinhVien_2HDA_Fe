@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { resetPassword } from '../services/auth.service.js'
+import { resetPassword } from '../services/auth.js'
 import Toast from '../components/ui/Toast.jsx'
 
 function ResetPasswordPage() {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { changePassword } from '../../services/auth.service.js'
+import { changePassword } from '../../services/auth.js'
 import Toast from '../ui/Toast.jsx'
 import Modal from '../ui/Modal.jsx'
 

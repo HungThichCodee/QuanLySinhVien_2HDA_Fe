@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import * as authService from '../services/auth.service.js'
+import * as authService from '../services/auth.js'
 
 function LoginPage() {
   let [username, setUsername] = useState('')

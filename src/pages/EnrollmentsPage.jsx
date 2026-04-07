@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import * as enrollmentService from '../services/enrollments.service.js'
-import * as courseClassService from '../services/courseclasses.service.js'
-import * as attendanceService from '../services/attendances.service.js'
+import * as enrollmentService from '../services/enrollments.js'
+import * as courseClassService from '../services/courseclasses.js'
+import * as attendanceService from '../services/attendances.js'
 import Toast from '../components/ui/Toast.jsx'
 import Modal from '../components/ui/Modal.jsx'
 

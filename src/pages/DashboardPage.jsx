@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import * as departmentService from '../services/departments.service.js'
-import * as studentService from '../services/students.service.js'
-import * as teacherService from '../services/teachers.service.js'
-import * as courseClassService from '../services/courseclasses.service.js'
-import * as notificationService from '../services/notifications.service.js'
+import * as departmentService from '../services/departments.js'
+import * as studentService from '../services/students.js'
+import * as teacherService from '../services/teachers.js'
+import * as courseClassService from '../services/courseclasses.js'
+import * as notificationService from '../services/notifications.js'
 
 function DashboardPage() {
   let { user, isAdmin, isTeacher, isStudent } = useAuth()

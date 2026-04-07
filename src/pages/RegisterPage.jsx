@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import * as authService from '../services/auth.service.js'
+import * as authService from '../services/auth.js'
 
 function RegisterPage() {
   let [form, setForm] = useState({ username: '', password: '', email: '', fullName: '', studentCode: '' })

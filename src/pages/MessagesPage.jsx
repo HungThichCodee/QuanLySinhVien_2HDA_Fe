@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import * as messageService from '../services/messages.service.js'
-import * as userService from '../services/users.service.js'
+import * as messageService from '../services/messages.js'
+import * as userService from '../services/users.js'
 import Modal from '../components/ui/Modal.jsx'
 
 function MessagesPage() {

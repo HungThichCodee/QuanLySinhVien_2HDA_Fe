@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { forgotPassword } from '../services/auth.service.js'
+import { forgotPassword } from '../services/auth.js'
 import Toast from '../components/ui/Toast.jsx'
 
 function ForgotPasswordPage() {

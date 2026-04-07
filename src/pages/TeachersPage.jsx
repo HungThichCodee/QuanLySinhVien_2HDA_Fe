@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useCRUD } from '../hooks/useCRUD'
-import * as service from '../services/teachers.service.js'
+import * as service from '../services/teachers.js'
 import Toast from '../components/ui/Toast.jsx'
 import ConfirmDialog from '../components/ui/ConfirmDialog.jsx'
 import Modal from '../components/ui/Modal.jsx'
 import { useEffect } from 'react'
-import * as departmentService from '../services/departments.service.js'
+import * as departmentService from '../services/departments.js'
 
 function TeachersPage() {
   let { data, loading, createItem, updateItem, removeItem, fetchData } = useCRUD(service)

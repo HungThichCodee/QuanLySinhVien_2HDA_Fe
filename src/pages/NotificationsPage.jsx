@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useSocket } from '../contexts/SocketContext.jsx'
-import * as service from '../services/notifications.service.js'
+import * as service from '../services/notifications.js'
 import Modal from '../components/ui/Modal.jsx'
 import Toast from '../components/ui/Toast.jsx'
-import * as userService from '../services/users.service.js'
-import * as classService from '../services/classes.service.js'
-import * as ccService from '../services/courseclasses.service.js'
+import * as userService from '../services/users.js'
+import * as classService from '../services/classes.js'
+import * as ccService from '../services/courseclasses.js'
 
 function NotificationsPage() {
   let { isAdmin, isTeacher } = useAuth()
