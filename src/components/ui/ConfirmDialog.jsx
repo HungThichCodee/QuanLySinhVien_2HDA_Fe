@@ -1,5 +1,9 @@
-function ConfirmDialog({ isOpen, onClose, onConfirm, message }) {
+function ConfirmDialog({ isOpen, onClose, onConfirm, message, confirmText, confirmColor }) {
   if (!isOpen) return null
+
+  let btnClass = confirmColor === 'primary'
+    ? 'bg-primary text-white hover:bg-primary-dark'
+    : 'bg-red-500 text-white hover:bg-red-600'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -10,8 +14,8 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, message }) {
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors">
             Hủy
           </button>
-          <button onClick={onConfirm} className="px-4 py-2 rounded-lg text-sm bg-red-500 text-white hover:bg-red-600 transition-colors">
-            Xóa
+          <button onClick={onConfirm} className={'px-4 py-2 rounded-lg text-sm transition-colors ' + btnClass}>
+            {confirmText || 'Xóa'}
           </button>
         </div>
       </div>
