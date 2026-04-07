@@ -15,6 +15,16 @@ function formatSchedule(schedule) {
   return DAY_LABELS[schedule.dayOfWeek] + ' - Tiết ' + schedule.startPeriod + '-' + schedule.endPeriod
 }
 
+function formatSemester(semester) {
+  if (!semester) return ''
+  if (!semester.startDate || !semester.endDate) return semester.name || ''
+  let start = new Date(semester.startDate)
+  let end = new Date(semester.endDate)
+  let startStr = start.getDate().toString().padStart(2, '0') + '/' + (start.getMonth() + 1).toString().padStart(2, '0') + '/' + start.getFullYear()
+  let endStr = end.getDate().toString().padStart(2, '0') + '/' + (end.getMonth() + 1).toString().padStart(2, '0') + '/' + end.getFullYear()
+  return semester.name + ' (' + startStr + ' - ' + endStr + ')'
+}
+
 function CourseClassesPage() {
   let { isAdmin, isTeacher } = useAuth()
   let [data, setData] = useState([])
@@ -159,7 +169,7 @@ function CourseClassesPage() {
                 <tr key={item._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-3 text-sm text-gray-500">{i + 1}</td>
                   <td className="px-5 py-3 text-sm font-medium text-gray-800">{item.subject?.name}</td>
-                  <td className="px-5 py-3 text-sm text-gray-500">{item.semester?.name}</td>
+                  <td className="px-5 py-3 text-sm text-gray-500">{formatSemester(item.semester)}</td>
                   <td className="px-5 py-3 text-sm text-gray-500">{item.teacher?.fullName || item.teacher?.user?.fullName}</td>
                   <td className="px-5 py-3 text-sm text-gray-500">{formatSchedule(item.schedule)}</td>
                   <td className="px-5 py-3 text-sm text-gray-500">{item.room}</td>
