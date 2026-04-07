@@ -14,8 +14,6 @@ let adminMenus = [
   { path: '/students', label: 'Sinh viên' },
   { path: '/courseclasses', label: 'Lớp học phần' },
   { path: '/enrollments', label: 'Đăng ký HP' },
-  { path: '/grades', label: 'Bảng điểm' },
-  { path: '/attendances', label: 'Điểm danh' },
   { path: '/notifications', label: 'Thông báo' },
   { path: '/messages', label: 'Tin nhắn' },
 ]
