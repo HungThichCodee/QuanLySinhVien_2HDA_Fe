@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import * as enrollmentService from '../services/enrollments.js'
 import * as courseClassService from '../services/courseclasses.js'
 import * as attendanceService from '../services/attendances.js'
+import * as gradeService from '../services/grades.js'
 import Toast from '../components/ui/Toast.jsx'
 import Modal from '../components/ui/Modal.jsx'
 
@@ -27,6 +28,8 @@ function EnrollmentsPage() {
   let [selectedCC, setSelectedCC] = useState('')
   let [ccEnrollments, setCcEnrollments] = useState([])
   let [ccLoading, setCcLoading] = useState(false)
+  let [gradeModalOpen, setGradeModalOpen] = useState(false)
+  let [selectedGrade, setSelectedGrade] = useState(null)
 
   async function loadData() {
     try {
@@ -46,6 +49,15 @@ function EnrollmentsPage() {
       let atts = await attendanceService.getByEnrollment(enrollmentId)
       setSelectedHistory(Array.isArray(atts) ? atts : [])
       setAttModalOpen(true)
+    } catch (err) { setToast({ message: err.message, type: 'error' }) }
+  }
+
+  async function openGradeHistory(enrollmentId, subjectName) {
+    try {
+      setSelectedClassTitle(subjectName)
+      let grade = await gradeService.getByEnrollment(enrollmentId)
+      setSelectedGrade(grade)
+      setGradeModalOpen(true)
     } catch (err) { setToast({ message: err.message, type: 'error' }) }
   }
 
@@ -139,6 +151,7 @@ function EnrollmentsPage() {
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Họ tên</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
                     <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Ngày đăng ký</th>
+                    <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -150,16 +163,64 @@ function EnrollmentsPage() {
                         <td className="px-5 py-3 text-sm text-gray-800">{item.student?.fullName}</td>
                         <td className="px-5 py-3 text-sm text-gray-500">{item.student?.email}</td>
                         <td className="px-5 py-3 text-sm text-gray-500">{new Date(item.createdAt).toLocaleDateString('vi-VN')}</td>
+                        <td className="px-5 py-3 text-right">
+                          <button onClick={function () { openGradeHistory(item._id, selectedClass.subject?.name) }} className="text-primary hover:underline text-sm">Xem điểm</button>
+                        </td>
                       </tr>
                     )
                   })}
-                  {ccEnrollments.length === 0 && <tr><td colSpan="5" className="px-5 py-8 text-center text-gray-400 text-sm">Chưa có sinh viên đăng ký</td></tr>}
+                  {ccEnrollments.length === 0 && <tr><td colSpan="6" className="px-5 py-8 text-center text-gray-400 text-sm">Chưa có sinh viên đăng ký</td></tr>}
                 </tbody>
               </table>
             </div>
             )}
           </>
         )}
+
+        <Modal isOpen={gradeModalOpen} onClose={function () { setGradeModalOpen(false) }} title={'Bảng điểm cá nhân: ' + selectedClassTitle}>
+          {selectedGrade ? (
+            <div>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <span className="text-xs font-semibold text-gray-500 uppercase">Điểm Chuyên cần</span>
+                  <p className="mt-1 text-lg text-gray-800 font-bold">{selectedGrade.attendanceScore !== undefined ? selectedGrade.attendanceScore : '-'}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <span className="text-xs font-semibold text-gray-500 uppercase">Điểm Giữa kỳ</span>
+                  <p className="mt-1 text-lg text-gray-800 font-bold">{selectedGrade.midtermScore !== undefined ? selectedGrade.midtermScore : '-'}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <span className="text-xs font-semibold text-gray-500 uppercase">Điểm Cuối kỳ</span>
+                  <p className="mt-1 text-lg text-gray-800 font-bold">{selectedGrade.finalScore !== undefined ? selectedGrade.finalScore : '-'}</p>
+                </div>
+                <div className="bg-primary/5 p-3 rounded-lg border border-primary/20">
+                  <span className="text-xs font-semibold text-primary uppercase">Điểm Tổng kết</span>
+                  <p className="mt-1 text-lg text-primary font-bold">{selectedGrade.averageScore !== undefined ? selectedGrade.averageScore : '-'}</p>
+                </div>
+              </div>
+              <div className="mb-4">
+                <span className="text-xs font-semibold text-gray-500 uppercase">Đánh giá chung</span>
+                {selectedGrade.averageScore !== undefined ? (
+                  selectedGrade.averageScore >= 4.0 ? (
+                    <p className="mt-1 text-sm text-green-600 font-medium bg-green-50 px-3 py-2 rounded border border-green-100">Đạt yêu cầu môn học (Qua môn)</p>
+                  ) : (
+                    <p className="mt-1 text-sm text-red-600 font-medium bg-red-50 px-3 py-2 rounded border border-red-100">Chưa đạt yêu cầu (Rớt môn)</p>
+                  )
+                ) : (
+                  <p className="mt-1 text-sm text-gray-500 italic">Chưa có kết quả tổng kết</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center flex flex-col items-center">
+              <span className="text-4xl mb-3">📭</span>
+              <p className="text-gray-500 text-sm">Sinh viên chưa có bản ghi điểm nào trong hệ thống</p>
+            </div>
+          )}
+          <div className="mt-6 flex justify-end">
+            <button onClick={function () { setGradeModalOpen(false) }} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Đóng</button>
+          </div>
+        </Modal>
       </div>
     )
   }
@@ -197,6 +258,7 @@ function EnrollmentsPage() {
                   <td className="px-5 py-3 text-sm text-gray-500">{cc?.room}</td>
                   <td className="px-5 py-3 text-sm text-gray-500">{cc?.teacher?.fullName || cc?.teacher?.user?.fullName}</td>
                   <td className="px-5 py-3 text-right">
+                    <button onClick={function () { openGradeHistory(item._id, cc?.subject?.name) }} className="text-primary hover:underline text-sm mr-3">Xem Điểm</button>
                     <button onClick={function () { openAttendanceHistory(item._id, cc?.subject?.name) }} className="text-blue-500 hover:underline text-sm">Xem Điểm danh</button>
                   </td>
                 </tr>
@@ -312,6 +374,52 @@ function EnrollmentsPage() {
         </div>
         <div className="mt-6 flex justify-end">
           <button onClick={function () { setAttModalOpen(false) }} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Đóng</button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={gradeModalOpen} onClose={function () { setGradeModalOpen(false) }} title={'Bảng điểm cá nhân: ' + selectedClassTitle}>
+        {selectedGrade ? (
+          <div>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <span className="text-xs font-semibold text-gray-500 uppercase">Điểm Chuyên cần</span>
+                <p className="mt-1 text-lg text-gray-800 font-bold">{selectedGrade.attendanceScore !== undefined ? selectedGrade.attendanceScore : '-'}</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <span className="text-xs font-semibold text-gray-500 uppercase">Điểm Giữa kỳ</span>
+                <p className="mt-1 text-lg text-gray-800 font-bold">{selectedGrade.midtermScore !== undefined ? selectedGrade.midtermScore : '-'}</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <span className="text-xs font-semibold text-gray-500 uppercase">Điểm Cuối kỳ</span>
+                <p className="mt-1 text-lg text-gray-800 font-bold">{selectedGrade.finalScore !== undefined ? selectedGrade.finalScore : '-'}</p>
+              </div>
+              <div className="bg-primary/5 p-3 rounded-lg border border-primary/20">
+                <span className="text-xs font-semibold text-primary uppercase">Điểm Tổng kết</span>
+                <p className="mt-1 text-lg text-primary font-bold">{selectedGrade.averageScore !== undefined ? selectedGrade.averageScore : '-'}</p>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <span className="text-xs font-semibold text-gray-500 uppercase">Đánh giá chung</span>
+              {selectedGrade.averageScore !== undefined ? (
+                selectedGrade.averageScore >= 4.0 ? (
+                  <p className="mt-1 text-sm text-green-600 font-medium bg-green-50 px-3 py-2 rounded border border-green-100">Đạt yêu cầu môn học (Qua môn)</p>
+                ) : (
+                  <p className="mt-1 text-sm text-red-600 font-medium bg-red-50 px-3 py-2 rounded border border-red-100">Chưa đạt yêu cầu (Rớt môn)</p>
+                )
+              ) : (
+                <p className="mt-1 text-sm text-gray-500 italic">Chưa có kết quả tổng kết</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="py-8 text-center flex flex-col items-center">
+            <span className="text-4xl mb-3">📭</span>
+            <p className="text-gray-500 text-sm">Sinh viên chưa có bản ghi điểm nào trong hệ thống</p>
+          </div>
+        )}
+        <div className="mt-6 flex justify-end">
+          <button onClick={function () { setGradeModalOpen(false) }} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Đóng</button>
         </div>
       </Modal>
     </div>

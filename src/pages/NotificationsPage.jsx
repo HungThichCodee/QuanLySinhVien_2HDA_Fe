@@ -7,6 +7,7 @@ import Toast from '../components/ui/Toast.jsx'
 import * as userService from '../services/users.js'
 import * as classService from '../services/classes.js'
 import * as ccService from '../services/courseclasses.js'
+import * as departmentService from '../services/departments.js'
 
 function NotificationsPage() {
   let { isAdmin, isTeacher } = useAuth()
@@ -17,7 +18,11 @@ function NotificationsPage() {
   useEffect(function() {
     if (!socket) return;
     function handleNewNotif(newNotif) {
-      setData(function(prev) { return [newNotif, ...prev] })
+      setData(function(prev) {
+        let exists = prev.some(function(n) { return n._id === newNotif._id })
+        if (exists) return prev
+        return [newNotif, ...prev]
+      })
     }
     socket.on('new_notification', handleNewNotif)
     return function() {
@@ -31,6 +36,7 @@ function NotificationsPage() {
   let [users, setUsers] = useState([])
   let [classes, setClasses] = useState([])
   let [courseClasses, setCourseClasses] = useState([])
+  let [departments, setDepartments] = useState([])
 
   useEffect(function () {
     service.getAll().then(function (r) { setData(Array.isArray(r) ? r : []); setLoading(false) }).catch(function () { setLoading(false) })
@@ -39,6 +45,7 @@ function NotificationsPage() {
       classService.getAll().then(function(c) { setClasses(Array.isArray(c) ? c : []) })
       userService.getAll().then(function(u) { setUsers(Array.isArray(u) ? u : []) })
       ccService.getAll().then(function(cc) { setCourseClasses(Array.isArray(cc) ? cc : []) })
+      departmentService.getAll().then(function(d) { setDepartments(Array.isArray(d) ? d : []) })
     } else if (isTeacher) {
       ccService.getMyTeaching().then(function(cc) { setCourseClasses(Array.isArray(cc) ? cc : []) })
     }
@@ -51,12 +58,17 @@ function NotificationsPage() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (form.targetType !== 'all' && !form.targetId) {
+    if (form.targetType !== 'all' && form.targetType !== 'allteachers' && !form.targetId) {
       setToast({ message: 'Vui lòng chọn đối tượng nhận', type: 'error' })
       return
     }
-    try { let result = await service.create(form); setData([...(Array.isArray(result) ? result : [result]), ...data]); setModalOpen(false); setToast({ message: 'Gửi thông báo thành công', type: 'success' }) }
-    catch (err) { setToast({ message: err.message, type: 'error' }) }
+    try {
+      let result = await service.create(form)
+      setModalOpen(false)
+      setToast({ message: 'Gửi thông báo thành công' + (result.count ? ' (' + result.count + ' người nhận)' : ''), type: 'success' })
+      let fresh = await service.getAll()
+      setData(Array.isArray(fresh) ? fresh : [])
+    } catch (err) { setToast({ message: err.message, type: 'error' }) }
   }
 
   async function handleDelete(id) {
@@ -84,10 +96,13 @@ function NotificationsPage() {
           return (
             <div key={n._id} className={`p-4 rounded-xl border transition-colors ${n.isRead ? 'bg-white border-gray-200' : 'bg-blue-50 border-blue-200'}`}>
               <div className="flex items-start justify-between">
-                <div className="flex-1" onClick={function () { if (!n.isRead) markRead(n._id) }}>
+                <div className="flex-1 cursor-pointer" onClick={function () { if (!n.isRead) markRead(n._id) }}>
                   <h3 className="text-sm font-semibold text-gray-800">{n.title}</h3>
                   <p className="text-sm text-gray-500 mt-1">{n.content}</p>
-                  <p className="text-xs text-gray-400 mt-2">{n.createdAt ? new Date(n.createdAt).toLocaleString('vi-VN') : ''}</p>
+                  <div className="flex items-center gap-3 mt-2">
+                    {n.senderName && <span className="text-xs text-primary font-medium">Từ: {n.senderName}</span>}
+                    <span className="text-xs text-gray-400">{n.createdAt ? new Date(n.createdAt).toLocaleString('vi-VN') : ''}</span>
+                  </div>
                 </div>
                 <button onClick={function () { handleDelete(n._id) }} className="text-red-400 hover:text-red-600 text-sm ml-3">✕</button>
               </div>
@@ -105,6 +120,8 @@ function NotificationsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Gửi đến</label>
             <select value={form.targetType} onChange={function(e) { setForm({ ...form, targetType: e.target.value, targetId: '' }) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
               <option value="all">Tất cả mọi người</option>
+              {isAdmin && <option value="allteachers">Tất cả Giáo viên</option>}
+              {isAdmin && <option value="department">Giáo viên theo Khoa</option>}
               {isAdmin && <option value="class">Một Lớp hành chính</option>}
               <option value="courseclass">Một Lớp học phần</option>
               {isAdmin && <option value="user">Một Người dùng cụ thể</option>}
@@ -121,6 +138,10 @@ function NotificationsPage() {
 
           {form.targetType === 'user' && (
             <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1.5">Chọn người dùng</label><select value={form.targetId} onChange={function(e){ setForm({...form, targetId: e.target.value}) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"><option value="">-- Chọn --</option>{users.map(function(u){ return <option key={u._id} value={u._id}>{u.fullname || u.username} ({u.role})</option> })}</select></div>
+          )}
+
+          {form.targetType === 'department' && (
+            <div className="mb-4"><label className="block text-sm font-medium text-gray-700 mb-1.5">Chọn Khoa</label><select value={form.targetId} onChange={function(e){ setForm({...form, targetId: e.target.value}) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"><option value="">-- Chọn --</option>{departments.map(function(d){ return <option key={d._id} value={d._id}>{d.name}</option> })}</select></div>
           )}
 
           <div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-1.5">Nội dung</label><textarea value={form.content} onChange={function (e) { setForm({ ...form, content: e.target.value }) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" rows="4" required></textarea></div>
