@@ -39,7 +39,7 @@ function UsersPage() {
     } catch (err) { setToast({ message: err.message, type: 'error' }) }
   }
 
-  function openCreate() { setEditId(null); setForm({ username: '', password: '', email: '', role: 'STUDENT', fullname: '' }); setModalOpen(true) }
+
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -103,7 +103,6 @@ function UsersPage() {
             <input type="text" value={searchKeyword} onChange={function (e) { setSearchKeyword(e.target.value) }} placeholder="Tìm theo username, email..." className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-56" />
           )}
           <button onClick={toggleTrash} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${trashMode ? 'bg-gray-800 text-white hover:bg-gray-900' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>{trashMode ? 'Quay lại' : 'Danh sách đã xóa'}</button>
-          {!trashMode && <button onClick={openCreate} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors">+ Thêm Tài khoản</button>}
         </div>
       </div>
       {trashLoading ? <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div> : (

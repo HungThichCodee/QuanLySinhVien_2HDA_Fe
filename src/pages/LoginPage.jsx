@@ -80,9 +80,6 @@ function LoginPage() {
             </button>
           </form>
 
-          <p className="text-sm text-gray-500 text-center mt-6">
-            Chưa có tài khoản? <Link to="/register" className="text-primary hover:underline font-medium">Đăng ký</Link>
-          </p>
         </div>
       </div>
     </div>

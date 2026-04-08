@@ -166,7 +166,7 @@ function StudentsPage() {
       <Modal isOpen={excelModalOpen} onClose={function () { setExcelModalOpen(false) }} title="Import danh sách sinh viên từ Excel">
         <form onSubmit={handleExcelImport}>
           <div className="mb-4">
-            <p className="text-sm text-gray-500 mb-3">Chọn file Excel (.xlsx) với các cột theo thứ tự: MSSV, Họ tên, Email, SĐT</p>
+            <p className="text-sm text-gray-500 mb-3">Chọn file Excel (.xlsx) với các cột theo thứ tự: <strong>MSSV, Họ tên, Email, SĐT, Tên Lớp, Mật khẩu</strong></p>
             <input type="file" accept=".xlsx,.xls" onChange={function (e) { setExcelFile(e.target.files[0] || null) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark" required />
           </div>
           {excelFile && <p className="text-xs text-gray-500 mb-4">File đã chọn: <strong>{excelFile.name}</strong> ({(excelFile.size / 1024).toFixed(1)} KB)</p>}

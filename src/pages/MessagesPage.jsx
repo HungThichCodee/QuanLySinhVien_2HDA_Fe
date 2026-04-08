@@ -119,7 +119,15 @@ function MessagesPage() {
                   <div key={msg._id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${isMe ? 'bg-primary text-white rounded-br-md' : 'bg-gray-100 text-gray-800 rounded-bl-md'}`}>
                       {msg.messageContent?.type === 'file' ? (
-                        <a href={msg.messageContent?.text} target="_blank" rel="noreferrer" className={`underline ${isMe ? 'text-white' : 'text-primary'}`}>Tệp đính kèm</a>
+                        function () {
+                          let filePath = msg.messageContent?.text || ''
+                          let fileUrl = filePath.startsWith('http') ? filePath : 'http://localhost:3000/' + filePath.replace(/\\/g, '/')
+                          let isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(filePath)
+                          if (isImage) {
+                            return <img src={fileUrl} alt="Ảnh" className="max-w-full rounded-lg cursor-pointer" onClick={function () { window.open(fileUrl, '_blank') }} />
+                          }
+                          return <a href={fileUrl} target="_blank" rel="noreferrer" className={`underline ${isMe ? 'text-white' : 'text-primary'}`}>📎 Tệp đính kèm</a>
+                        }()
                       ) : (
                         msg.messageContent?.text || msg.messageContent?.content || msg.content || ''
                       )}
