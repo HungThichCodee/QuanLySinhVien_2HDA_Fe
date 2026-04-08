@@ -43,9 +43,22 @@ function CourseClassesPage() {
   let [displayData, setDisplayData] = useState(null)
   let [detailItem, setDetailItem] = useState(null)
   let [detailModalOpen, setDetailModalOpen] = useState(false)
+  let [filterSemester, setFilterSemester] = useState('')
+  let [filterTeacher, setFilterTeacher] = useState('')
+
+  async function loadData(semId, teachId) {
+    let parts = []
+    if (semId) parts.push('semester=' + semId)
+    if (teachId) parts.push('teacher=' + teachId)
+    let query = parts.join('&')
+    let result = await service.getAll(query)
+    setData(Array.isArray(result) ? result : [])
+    setDisplayData(null)
+    setSearchKeyword('')
+  }
 
   useEffect(function () {
-    async function load() {
+    async function init() {
       try {
         let result = isTeacher ? await service.getMyTeaching() : await service.getAll()
         setData(Array.isArray(result) ? result : [])
@@ -58,7 +71,7 @@ function CourseClassesPage() {
       } catch (err) { console.log(err) }
       setLoading(false)
     }
-    load()
+    init()
   }, [isAdmin, isTeacher])
 
   useEffect(function () {
@@ -167,15 +180,29 @@ function CourseClassesPage() {
     <div>
       {toast && <Toast message={toast.message} type={toast.type} onClose={function () { setToast(null) }} />}
 
-      <div className="flex items-center justify-between mb-6">
+
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-800 font-display">{isTeacher ? 'Lớp học phần của tôi' : 'Quản lý Lớp học phần'}</h1>
-        <div className="flex gap-2">
-          {isAdmin && (
-            <input type="text" value={searchKeyword} onChange={function (e) { setSearchKeyword(e.target.value) }} placeholder="Tìm theo tên môn học..." className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-52" />
-          )}
-          {isAdmin && <button onClick={openCreate} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors">+ Thêm LHP</button>}
-        </div>
+        {isAdmin && <button onClick={openCreate} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors">+ Thêm LHP</button>}
       </div>
+
+      {isAdmin && (
+        <div className="flex flex-wrap gap-2 mb-5">
+          <input type="text" value={searchKeyword} onChange={function (e) { setSearchKeyword(e.target.value) }} placeholder="Tìm theo tên môn học..." className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-52" />
+          <select value={filterSemester} onChange={function (e) { let v = e.target.value; setFilterSemester(v); loadData(v, filterTeacher) }} className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
+            <option value="">-- Tất cả học kỳ --</option>
+            {semesters.map(function (s) { return <option key={s._id} value={s._id}>{s.name}</option> })}
+          </select>
+          <select value={filterTeacher} onChange={function (e) { let v = e.target.value; setFilterTeacher(v); loadData(filterSemester, v) }} className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
+            <option value="">-- Tất cả giáo viên --</option>
+            {teachers.map(function (t) { return <option key={t._id} value={t._id}>{t.fullName}</option> })}
+          </select>
+          {(filterSemester || filterTeacher) && (
+            <button onClick={function () { setFilterSemester(''); setFilterTeacher(''); loadData('', '') }} className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-500 hover:bg-gray-100 transition-colors">✕ Bỏ lọc</button>
+          )}
+        </div>
+      )}
+
 
       <div className="bg-white rounded-xl shadow-card overflow-hidden">
         <table className="w-full">
