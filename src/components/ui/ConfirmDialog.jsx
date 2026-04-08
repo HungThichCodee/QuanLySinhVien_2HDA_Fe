@@ -3,6 +3,8 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, message, confirmText, confi
 
   let btnClass = confirmColor === 'primary'
     ? 'bg-primary text-white hover:bg-primary-dark'
+    : confirmColor === 'success'
+    ? 'bg-green-600 text-white hover:bg-green-700'
     : 'bg-red-500 text-white hover:bg-red-600'
 
   return (

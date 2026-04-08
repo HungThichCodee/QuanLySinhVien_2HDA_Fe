@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCRUD } from '../hooks/useCRUD'
 import * as service from '../services/users.js'
 import Modal from '../components/ui/Modal.jsx'
@@ -15,6 +15,29 @@ function UsersPage() {
   let [trashMode, setTrashMode] = useState(false)
   let [trashData, setTrashData] = useState([])
   let [trashLoading, setTrashLoading] = useState(false)
+  let [searchKeyword, setSearchKeyword] = useState('')
+  let [displayData, setDisplayData] = useState(null)
+  let [detailItem, setDetailItem] = useState(null)
+  let [detailModalOpen, setDetailModalOpen] = useState(false)
+
+  useEffect(function () {
+    if (!searchKeyword.trim()) { setDisplayData(null); return }
+    let timer = setTimeout(async function () {
+      try {
+        let result = await service.search(searchKeyword)
+        setDisplayData(Array.isArray(result) ? result : [])
+      } catch (err) { setToast({ message: err.message, type: 'error' }) }
+    }, 400)
+    return function () { clearTimeout(timer) }
+  }, [searchKeyword])
+
+  async function openDetail(item) {
+    try {
+      let result = await service.getById(item._id)
+      setDetailItem(Array.isArray(result) ? result[0] : result)
+      setDetailModalOpen(true)
+    } catch (err) { setToast({ message: err.message, type: 'error' }) }
+  }
 
   function openCreate() { setEditId(null); setForm({ username: '', password: '', email: '', role: 'STUDENT', fullname: '' }); setModalOpen(true) }
 
@@ -74,9 +97,12 @@ function UsersPage() {
     <div>
       {toast && <Toast message={toast.message} type={toast.type} onClose={function () { setToast(null) }} />}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 font-display">{trashMode ? 'Thùng rác Tài khoản' : 'Quản lý Tài khoản'}</h1>
+        <h1 className="text-2xl font-bold text-gray-800 font-display">{trashMode ? 'Danh sách đã xóa Tài khoản' : 'Quản lý Tài khoản'}</h1>
         <div className="flex gap-2">
-          <button onClick={toggleTrash} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${trashMode ? 'bg-gray-800 text-white hover:bg-gray-900' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>{trashMode ? 'Quay lại' : 'Thùng rác'}</button>
+          {!trashMode && (
+            <input type="text" value={searchKeyword} onChange={function (e) { setSearchKeyword(e.target.value) }} placeholder="Tìm theo username, email..." className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-56" />
+          )}
+          <button onClick={toggleTrash} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${trashMode ? 'bg-gray-800 text-white hover:bg-gray-900' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>{trashMode ? 'Quay lại' : 'Danh sách đã xóa'}</button>
           {!trashMode && <button onClick={openCreate} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors">+ Thêm Tài khoản</button>}
         </div>
       </div>
@@ -91,9 +117,10 @@ function UsersPage() {
               <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Vai trò</th>
               <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Thao tác</th>
             </tr>
+            {searchKeyword && !trashMode && <tr><td colSpan="5" className="px-5 py-1.5 text-xs text-gray-400 bg-gray-50">Kết quả tìm kiếm cho "{searchKeyword}"</td></tr>}
           </thead>
           <tbody>
-            {(trashMode ? trashData : data).map(function (item, i) {
+            {(trashMode ? trashData : (displayData !== null ? displayData : data)).map(function (item, i) {
               let roleColor = item.role === 'ADMIN' ? 'bg-red-100 text-red-700' : item.role === 'TEACHER' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'
               return (
                 <tr key={item._id} className="border-b border-gray-100 hover:bg-gray-50">
@@ -106,6 +133,7 @@ function UsersPage() {
                       <button onClick={function () { handleRestore(item._id) }} className="text-green-600 hover:underline text-sm">Khôi phục</button>
                     ) : (
                       <>
+                        <button onClick={function () { openDetail(item) }} className="text-gray-500 hover:underline text-sm mr-3">Xem</button>
                         <button onClick={function () { handleEdit(item) }} className="text-blue-500 hover:underline text-sm mr-3">Sửa</button>
                         <button onClick={function () { setConfirmId(item._id) }} className="text-red-500 hover:underline text-sm">Xóa</button>
                       </>
@@ -114,7 +142,7 @@ function UsersPage() {
                 </tr>
               )
             })}
-            {(trashMode ? trashData : data).length === 0 && <tr><td colSpan="5" className="px-5 py-8 text-center text-gray-400 text-sm">{trashMode ? 'Thùng rác trống' : 'Không có dữ liệu'}</td></tr>}
+            {(trashMode ? trashData : (displayData !== null ? displayData : data)).length === 0 && <tr><td colSpan="5" className="px-5 py-8 text-center text-gray-400 text-sm">{trashMode ? 'Danh sách xóa trống' : (searchKeyword ? 'Không tìm thấy kết quả' : 'Không có dữ liệu')}</td></tr>}
           </tbody>
         </table>
       </div>
@@ -128,6 +156,18 @@ function UsersPage() {
           <div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-1.5">Vai trò</label><select value={form.role} onChange={function (e) { setForm({ ...form, role: e.target.value }) }} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"><option value="ADMIN">ADMIN</option><option value="TEACHER">TEACHER</option><option value="STUDENT">STUDENT</option></select></div>
           <div className="flex justify-end gap-3"><button type="button" onClick={function () { setModalOpen(false) }} className="px-4 py-2 rounded-lg text-sm border border-gray-300 text-gray-600 hover:bg-gray-50">Hủy</button><button type="submit" className="px-4 py-2 rounded-lg text-sm bg-primary text-white font-semibold hover:bg-primary-dark">{editId ? "Cập nhật" : "Tạo mới"}</button></div>
         </form>
+      </Modal>
+      <Modal isOpen={detailModalOpen} onClose={function () { setDetailModalOpen(false) }} title="Chi tiết Tài khoản">
+        {detailItem && (
+          <div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Tên đăng nhập</span><p className="mt-1 text-sm text-gray-800 font-medium font-mono">{detailItem.username}</p></div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Email</span><p className="mt-1 text-sm text-gray-600">{detailItem.email}</p></div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Họ tên</span><p className="mt-1 text-sm text-gray-600">{detailItem.fullname || '—'}</p></div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Vai trò</span><p className="mt-1"><span className={`px-2 py-1 rounded-full text-xs font-medium ${detailItem.role === 'ADMIN' ? 'bg-red-100 text-red-700' : detailItem.role === 'TEACHER' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>{detailItem.role}</span></p></div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">ID</span><p className="mt-1 text-xs text-gray-400 font-mono">{detailItem._id}</p></div>
+            <div className="flex justify-end mt-4"><button onClick={function () { setDetailModalOpen(false) }} className="px-4 py-2 rounded-lg text-sm border border-gray-300 text-gray-600 hover:bg-gray-50">Đóng</button></div>
+          </div>
+        )}
       </Modal>
       <ConfirmDialog isOpen={!!confirmId} onClose={function () { setConfirmId(null) }} onConfirm={handleDelete} />
     </div>
