@@ -39,6 +39,10 @@ function CourseClassesPage() {
   let [loading, setLoading] = useState(true)
   let [availableSlots, setAvailableSlots] = useState([])
   let [availableRooms, setAvailableRooms] = useState([])
+  let [searchKeyword, setSearchKeyword] = useState('')
+  let [displayData, setDisplayData] = useState(null)
+  let [detailItem, setDetailItem] = useState(null)
+  let [detailModalOpen, setDetailModalOpen] = useState(false)
 
   useEffect(function () {
     async function load() {
@@ -57,6 +61,24 @@ function CourseClassesPage() {
     load()
   }, [isAdmin, isTeacher])
 
+  useEffect(function () {
+    if (!searchKeyword.trim()) { setDisplayData(null); return }
+    let timer = setTimeout(async function () {
+      try {
+        let result = await service.search(searchKeyword)
+        setDisplayData(Array.isArray(result) ? result : [])
+      } catch (err) { setToast({ message: err.message, type: 'error' }) }
+    }, 400)
+    return function () { clearTimeout(timer) }
+  }, [searchKeyword])
+
+  async function openDetail(item) {
+    try {
+      let result = await service.getById(item._id)
+      setDetailItem(result)
+      setDetailModalOpen(true)
+    } catch (err) { setToast({ message: err.message, type: 'error' }) }
+  }
   useEffect(function () {
     if (form.semester && form.teacher) {
       service.getAvailableSlots(form.semester, form.teacher).then(function (slots) {
@@ -137,6 +159,7 @@ function CourseClassesPage() {
   }
 
   let currentSlotValue = form.schedule.dayOfWeek ? form.schedule.dayOfWeek + '-' + form.schedule.startPeriod + '-' + form.schedule.endPeriod : ''
+  let listData = displayData !== null ? displayData : data
 
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>
 
@@ -146,7 +169,12 @@ function CourseClassesPage() {
 
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800 font-display">{isTeacher ? 'Lớp học phần của tôi' : 'Quản lý Lớp học phần'}</h1>
-        {isAdmin && <button onClick={openCreate} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors">+ Thêm LHP</button>}
+        <div className="flex gap-2">
+          {isAdmin && (
+            <input type="text" value={searchKeyword} onChange={function (e) { setSearchKeyword(e.target.value) }} placeholder="Tìm theo tên môn học..." className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary w-52" />
+          )}
+          {isAdmin && <button onClick={openCreate} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors">+ Thêm LHP</button>}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-card overflow-hidden">
@@ -162,9 +190,10 @@ function CourseClassesPage() {
               <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">SS</th>
               {isAdmin && <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Thao tác</th>}
             </tr>
+            {searchKeyword && isAdmin && <tr><td colSpan="8" className="px-5 py-1.5 text-xs text-gray-400 bg-gray-50">Kết quả tìm kiếm cho "{searchKeyword}"</td></tr>}
           </thead>
           <tbody>
-            {data.map(function (item, i) {
+            {listData.map(function (item, i) {
               return (
                 <tr key={item._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-3 text-sm text-gray-500">{i + 1}</td>
@@ -176,6 +205,7 @@ function CourseClassesPage() {
                   <td className="px-5 py-3 text-sm text-gray-500">{item.currentStudents || 0}/{item.maxStudents}</td>
                   {isAdmin && (
                     <td className="px-5 py-3 text-right">
+                      <button onClick={function () { openDetail(item) }} className="text-gray-500 hover:underline text-sm mr-3">Xem</button>
                       <button onClick={function () { openEdit(item) }} className="text-primary hover:underline text-sm mr-3">Sửa</button>
                       <button onClick={function () { setConfirmId(item._id) }} className="text-red-500 hover:underline text-sm">Xóa</button>
                     </td>
@@ -183,8 +213,8 @@ function CourseClassesPage() {
                 </tr>
               )
             })}
-            {data.length === 0 && (
-              <tr><td colSpan="8" className="px-5 py-8 text-center text-gray-400 text-sm">Không có dữ liệu</td></tr>
+            {listData.length === 0 && (
+              <tr><td colSpan="8" className="px-5 py-8 text-center text-gray-400 text-sm">{searchKeyword ? 'Không tìm thấy kết quả' : 'Không có dữ liệu'}</td></tr>
             )}
           </tbody>
         </table>
@@ -261,6 +291,21 @@ function CourseClassesPage() {
       </Modal>
 
       <ConfirmDialog isOpen={!!confirmId} onClose={function () { setConfirmId(null) }} onConfirm={handleDelete} />
+      <Modal isOpen={detailModalOpen} onClose={function () { setDetailModalOpen(false) }} title="Chi tiết Lớp học phần">
+        {detailItem && (
+          <div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Môn học</span><p className="mt-1 text-sm text-gray-800 font-medium">{detailItem.subject?.name}</p></div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Mã môn</span><p className="mt-1 text-sm text-primary font-mono">{detailItem.subject?.subjectCode || '—'}</p></div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Học kỳ</span><p className="mt-1 text-sm text-gray-600">{formatSemester(detailItem.semester)}</p></div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Giáo viên</span><p className="mt-1 text-sm text-gray-600">{detailItem.teacher?.fullName || detailItem.teacher?.user?.fullName || '—'}</p></div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Lịch học</span><p className="mt-1 text-sm text-gray-600">{formatSchedule(detailItem.schedule) || '—'}</p></div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Phòng học</span><p className="mt-1 text-sm text-gray-600">{detailItem.room || '—'}</p></div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Sĩ số</span><p className="mt-1 text-sm text-gray-600">{detailItem.currentStudents || 0} / {detailItem.maxStudents}</p></div>
+            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">ID</span><p className="mt-1 text-xs text-gray-400 font-mono">{detailItem._id}</p></div>
+            <div className="flex justify-end mt-4"><button onClick={function () { setDetailModalOpen(false) }} className="px-4 py-2 rounded-lg text-sm border border-gray-300 text-gray-600 hover:bg-gray-50">Đóng</button></div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

@@ -162,8 +162,15 @@ function UsersPage() {
           <div>
             <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Tên đăng nhập</span><p className="mt-1 text-sm text-gray-800 font-medium font-mono">{detailItem.username}</p></div>
             <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Email</span><p className="mt-1 text-sm text-gray-600">{detailItem.email}</p></div>
-            <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Họ tên</span><p className="mt-1 text-sm text-gray-600">{detailItem.fullname || '—'}</p></div>
             <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Vai trò</span><p className="mt-1"><span className={`px-2 py-1 rounded-full text-xs font-medium ${detailItem.role === 'ADMIN' ? 'bg-red-100 text-red-700' : detailItem.role === 'TEACHER' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>{detailItem.role}</span></p></div>
+            {detailItem.profileInfo ? (
+              <>
+                <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">Họ tên</span><p className="mt-1 text-sm text-gray-800 font-medium">{detailItem.profileInfo.fullName || '—'}</p></div>
+                <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">{detailItem.profileInfo.unitLabel}</span><p className="mt-1 text-sm text-gray-600">{detailItem.profileInfo.unitName || '—'}</p></div>
+              </>
+            ) : (
+              <div className="mb-3 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200"><p className="text-xs text-gray-400 italic">Chưa liên kết với {detailItem.role === 'STUDENT' ? 'Sinh viên' : detailItem.role === 'TEACHER' ? 'Giáo viên' : 'hồ sơ'} nào</p></div>
+            )}
             <div className="mb-3"><span className="text-xs font-semibold text-gray-500 uppercase">ID</span><p className="mt-1 text-xs text-gray-400 font-mono">{detailItem._id}</p></div>
             <div className="flex justify-end mt-4"><button onClick={function () { setDetailModalOpen(false) }} className="px-4 py-2 rounded-lg text-sm border border-gray-300 text-gray-600 hover:bg-gray-50">Đóng</button></div>
           </div>
