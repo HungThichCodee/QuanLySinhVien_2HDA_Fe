@@ -6,7 +6,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog.jsx'
 import Toast from '../components/ui/Toast.jsx'
 
 function UsersPage() {
-  let { data, loading, createItem, updateItem, removeItem } = useCRUD(service)
+  let { data, loading, updateItem, removeItem } = useCRUD(service)
   let [modalOpen, setModalOpen] = useState(false)
   let [form, setForm] = useState({ username: '', password: '', email: '', role: 'STUDENT', fullname: '' })
   let [confirmId, setConfirmId] = useState(null)
@@ -40,19 +40,13 @@ function UsersPage() {
   }
 
 
-
   async function handleSubmit(e) {
     e.preventDefault()
     try {
-      if (editId) {
-        let updateData = { ...form }
-        if (!updateData.password) delete updateData.password
-        await updateItem(editId, updateData)
-        setToast({ message: 'Cập nhật thành công', type: 'success' })
-      } else {
-        await createItem(form)
-        setToast({ message: 'Tạo thành công', type: 'success' })
-      }
+      let updateData = { ...form }
+      if (!updateData.password) delete updateData.password
+      await updateItem(editId, updateData)
+      setToast({ message: 'Cập nhật thành công', type: 'success' })
       setModalOpen(false)
     } catch (err) { setToast({ message: err.message, type: 'error' }) }
   }
