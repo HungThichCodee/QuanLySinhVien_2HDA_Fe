@@ -160,8 +160,29 @@ function GradesPage() {
       formData.append('file', excelFile)
       formData.append('courseClassId', selectedCC)
       let result = await postFormData('/upload/excel/grades', formData)
-      let count = Array.isArray(result) ? result.length : 0
-      setToast({ message: 'Import thành công ' + count + ' dòng điểm', type: 'success' })
+      
+      if (Array.isArray(result)) {
+        let successItems = result.filter(function(r) { return r.success === true })
+        let errorItems = result.filter(function(r) { return r.success === false })
+        
+        if (errorItems.length > 0) {
+          let firstError = errorItems[0]
+          let errorMsg = 'Lỗi SV ' + (firstError.studentCode || 'N/A') + ': ' + (firstError.message === "khong tim thay sinh vien trong lop" ? "Không có trong lớp" : (firstError.message === "khong tim thay grade" ? "Chưa có bảng điểm gốc" : firstError.message))
+          if (errorItems.length > 1) {
+            errorMsg += ' (và ' + (errorItems.length - 1) + ' SV khác)'
+          }
+          if (successItems.length > 0) {
+            setToast({ message: 'Cập nhật ' + successItems.length + ' SV. ' + errorMsg, type: 'warning' })
+          } else {
+            setToast({ message: 'Thất bại ' + errorItems.length + ' dòng. ' + errorMsg, type: 'error' })
+          }
+        } else {
+          setToast({ message: 'Import thành công ' + successItems.length + ' dòng điểm', type: 'success' })
+        }
+      } else {
+        setToast({ message: 'Có lỗi xảy ra khi đọc file', type: 'error' })
+      }
+
       setExcelModalOpen(false)
       setExcelFile(null)
       if (selectedCC) { let g = await gradeService.getByCourseClass(selectedCC); setGrades(Array.isArray(g) ? g : []) }
